@@ -17,7 +17,7 @@ Forked from [mcp-evals](https://github.com/Growth-Loops-Technology/mcp-evals) (r
 You need Python 3.11 or later and Git.
 
 ```powershell
-git clone https://github.com/Growth-Loops-Technology/sh-mcp-evals.git
+git clone https://github.com/pradipan-grloop/sh-mcp-evals.git
 cd sh-mcp-evals
 python -m venv .venv
 .venv\Scripts\python -m pip install -e ".[dev]"
