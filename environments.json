@@ -1,0 +1,6 @@
+{
+  "qa":      { "url": "https://api.qa.stitchedhealth.com/mcp",           "allow_writes": true },
+  "staging": { "url": "https://api.staging.stitchedhealth.com/mcp",      "allow_writes": true },
+  "dev":     { "url": "https://stitchedhealth-backend.onrender.com/mcp", "allow_writes": true },
+  "local":   { "url": "http://localhost:3000/mcp",                       "allow_writes": true }
+}

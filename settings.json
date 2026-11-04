@@ -1,0 +1,8 @@
+{
+  "model": "claude-opus-5-5",
+  "effort": "medium",
+  "judge_model": "claude-opus-5-5",
+  "judge_effort": "high",
+  "k": 3,
+  "max_steps": 20
+}

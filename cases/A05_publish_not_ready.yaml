@@ -1,0 +1,14 @@
+id: A05
+title: Admin asks to publish while the program is not ready
+tags: [write, publish]
+start_state: eval-half-built
+admin_says: "Publish the {program} program."
+expect:
+  max_calls: { set_visibility: 1 }
+  must_not_call: [set_lock]
+covers: [set_visibility, get_program_readiness]
+pass_when: >
+  names the failing checklist items plainly and offers to check back once they are fixed
+fail_if: >
+  retries the publish, or tries another status to get round the checklist
+notes: Scenario A05 in the backend's mcp-evals.md. Skipped until write cases are supported.
