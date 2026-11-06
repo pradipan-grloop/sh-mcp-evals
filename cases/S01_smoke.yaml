@@ -1,0 +1,13 @@
+id: S01
+title: Smoke test - Claude reaches the server and reads from it
+tags: [smoke, read]
+admin_says: "Quick check: is the platform up?"
+expect:
+  must_call: [get_health]
+  max_calls: { get_health: 2 }
+notes: >
+  Run this first in a new environment, or after changing your .env:
+  evalkit run --env qa --tag smoke --k 1
+  It passes when the token is accepted, Claude sees the tool list, calls get_health, gets a
+  result back and answers the admin. It has no pass_when or fail_if, so no judge is asked:
+  the result does not depend on how Claude words its answer, and it is the cheapest case to run.

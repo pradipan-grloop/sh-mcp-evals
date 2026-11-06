@@ -39,11 +39,22 @@ Then fill in `.env`:
 Check the setup: `.venv\Scripts\python -m pytest -q` should pass with no network access and no
 keys.
 
+Then, with `.env` filled in, run the smoke test against an environment:
+
+```powershell
+.venv\Scripts\evalkit run --env qa --tag smoke --k 1
+```
+
+Case `S01` passes when the token is accepted, Claude sees the server's tools, calls
+`get_health` and answers. It has no judge, so it costs one short conversation. If it fails, the
+error or `transcripts/S01_run1.json` says where it stopped.
+
 ## Run
 
 ```powershell
 .venv\Scripts\evalkit cases                     # check every case file; no network
 .venv\Scripts\evalkit lint --env staging        # spec lint only; no Claude
+.venv\Scripts\evalkit run --env qa --tag smoke --k 1   # smoke test: is everything set up?
 .venv\Scripts\evalkit run --env qa              # everything, and the report
 .venv\Scripts\evalkit run --env qa --case A08   # one case (repeat --case for more)
 .venv\Scripts\evalkit run --env qa --tag pii    # cases with a tag
@@ -98,7 +109,8 @@ to see the current status.
 ## Write a case
 
 Copy `cases/_template.yaml` to `cases/<ID>_<short_name>.yaml`. The template explains every key.
-The examples are `R01` (read), `A08` (personal data) and `A05` (write; skipped for now).
+The examples are `S01` (smoke; `expect` only, no judge), `R01` (read), `A08` (personal data)
+and `A05` (write; skipped for now).
 
 ```yaml
 id: A08
