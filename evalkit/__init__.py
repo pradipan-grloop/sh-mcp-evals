@@ -1,4 +1,4 @@
-"""evalkit: the only shared code behind the MCP case notebooks."""
+"""evalkit: evaluation of Stitched Health's MCP server. `evalkit run --env qa` runs the cases."""
 from evalkit.client import connect
 
 __all__ = ["connect"]

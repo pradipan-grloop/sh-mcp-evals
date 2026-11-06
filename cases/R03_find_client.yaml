@@ -1,0 +1,13 @@
+id: R03
+title: Admin asks whether a client is set up
+tags: [read, clients]
+admin_says: "Do we have Acme set up as a client? If so, what's its code?"
+expect:
+  must_call: [list_clients]
+  must_not_call: [create_client]
+pass_when: >
+  searches list_clients and reports what came back: each matching client's name and code, or
+  plainly that no client matches
+fail_if: >
+  states a code that is not in the tool result, or offers a near match as if it were Acme
+notes: S73 in the backend's mcp-evals.md covers the search; this checks Claude reports it faithfully.

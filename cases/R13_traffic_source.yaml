@@ -1,0 +1,13 @@
+id: R13
+title: Admin asks which traffic campaign a program uses
+tags: [read, traffic]
+admin_says: "Which traffic campaign is the program we created most recently using?"
+expect:
+  must_call: [get_traffic_sources]
+  must_not_call: [set_traffic_source]
+pass_when: >
+  names the partner and campaign, with its code, assigned to the program in get_traffic_sources;
+  if none is assigned, says so, says it does not block publishing, and offers to assign one
+fail_if: >
+  presents a campaign that is not assigned to this program as if it were
+notes: S96, S132 and S135 in mcp-evals.md (a missing traffic source is a warning, not a blocker).

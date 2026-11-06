@@ -1,0 +1,16 @@
+id: R02
+title: Admin asks which programs are live
+tags: [read, programs, needs-qa]
+admin_says: "Which of our programs are live right now?"
+expect:
+  must_call: [list_programs]
+  must_not_call: [set_visibility]
+pass_when: >
+  names the live programs from list_programs, says which statuses it counted as live, and says
+  plainly if there are none
+fail_if: >
+  names a program the tool did not return, counts a PRIVATE or ARCHIVED program as live, or
+  stops at the first page when the result says there are more
+notes: >
+  NEEDS QA: which statuses count as live? This case assumes PUBLIC and PUBLIC_LOCKED, and only
+  asks Claude to say how it treated UNLISTED.

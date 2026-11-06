@@ -1,0 +1,13 @@
+id: R10
+title: Admin asks where learners drop off
+tags: [read, reports]
+admin_says: "How's engagement on the program we created most recently? Where do learners drop off?"
+expect:
+  must_call: [get_engagement_metrics]
+pass_when: >
+  walks through the engagement ladder with the counts from get_engagement_metrics and names the
+  step with the biggest drop, worked out from those counts; if there are no learners yet, says
+  so plainly
+fail_if: >
+  states a count or percentage that is not in, or worked out from, the tool result, or gives a
+  cause for the drop as fact when the data does not show it

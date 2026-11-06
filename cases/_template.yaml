@@ -1,0 +1,45 @@
+# Copy this file to cases/<ID>_<short_name>.yaml and fill it in.
+# Files starting with _ are never run. Check your file with:  evalkit cases
+#
+# A case never names an environment, a URL, a token or a program id: the same file runs
+# against qa, staging or any other environment.
+
+# Required. Short and unique. Reuse the scenario ids from mcp-evals.md where one fits (A05, A08).
+id: X01
+
+# Required. What the case is about, in a few words. Shown in the report.
+title: Admin asks for something
+
+# Optional. Lets you run a group:  evalkit run --env qa --tag publish
+tags: [read]
+
+# Optional. Leave it out for a read-only case.
+# A case that changes data starts from one of the eval programs:
+#   eval-empty | eval-half-built | eval-ready
+# and can say {program} in admin_says, which becomes that program's name.
+# Write cases are reported as SKIPPED until `evalkit login` is built.
+# start_state: eval-half-built
+
+# Required. What the admin says. One message, or a list sent in order: each one is sent
+# after Claude has answered the one before (use this for "yes, go ahead" follow-ups).
+admin_says: "Which programs are live right now?"
+# admin_says:
+#   - "Publish the {program} program."
+#   - "Yes, go ahead."
+
+# Optional, checked without a model. Tool names exactly as the server lists them.
+expect:
+  must_call: [list_programs]          # each must be called at least once
+  must_not_call: [set_visibility]     # none of these may be called
+  max_calls: { list_programs: 3 }     # at most this many calls of a tool
+
+# Graded by Claude reading the transcript. Write what Claude does, in plain words.
+pass_when: lists the live programs by name, taken from the tool result
+fail_if: names a program the tool did not return
+
+# Optional. Tools this case tests, for the coverage report, when they are not already in
+# must_call or max_calls.
+covers: []
+
+# Optional. Anything a reader of the case should know.
+notes: ""

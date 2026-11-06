@@ -1,0 +1,12 @@
+id: R01
+title: Admin asks whether the platform is healthy
+tags: [read, health]
+admin_says: "Is everything healthy on the platform right now? Is anything stuck?"
+expect:
+  must_call: [get_health]
+pass_when: >
+  sums up the platform's state from get_health in a few plain sentences, including whether
+  any videos are stuck or failing, and says clearly whether anything needs attention
+fail_if: >
+  states figures or problems that are not in the tool result, pastes the raw JSON,
+  or tries to change anything

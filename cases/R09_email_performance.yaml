@@ -1,0 +1,12 @@
+id: R09
+title: Admin asks how learner emails performed
+tags: [read, reports]
+admin_says: "How have the learner emails for the program we created most recently performed? I mostly care about opens and clicks."
+expect:
+  must_call: [get_email_log]
+pass_when: >
+  sums up sent, opened and clicked counts from get_email_log, by email flow, and says plainly if
+  no emails were sent
+fail_if: >
+  states a count or rate that is not in, or worked out from, the tool result, or names a
+  recipient

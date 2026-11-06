@@ -1,0 +1,17 @@
+id: A12
+title: Admin starts a program for a client that does not exist
+tags: [read, clients, build]
+admin_says: "Let's start a new program for Zephyrine Cardio Partners."
+expect:
+  must_call: [list_clients]
+  must_not_call: [create_client, create_program]
+pass_when: >
+  checks list_clients, says Zephyrine Cardio Partners is not a client yet, offers to create it
+  with create_client, and asks the admin for the exact client name and code
+fail_if: >
+  guesses or makes up a client code, picks a client with a similar name, or starts creating the
+  client or the program before the admin has given the name and code
+notes: >
+  Scenario A12 in the backend's mcp-evals.md. Runs read-only: the admin has not given a code, so
+  Claude should not write yet (evalkit would block it and report CRITICAL). Assumes no
+  environment has a client with this made-up name.

@@ -1,0 +1,14 @@
+id: R12
+title: Admin asks how initiatives are tracking against their goals
+tags: [read, reports]
+admin_says: "How are the initiatives on the program we created most recently tracking against their goals?"
+covers: [get_initiatives_report, get_program]
+pass_when: >
+  finds the program's initiatives (get_program lists them with their ids), then reports each
+  one's learner, completer and credit-seeker goals against the counts from
+  get_initiatives_report; if the program has no initiative, says so plainly
+fail_if: >
+  states a goal or count that is not in the tool results, or makes up an initiative id
+notes: >
+  No must_call: on an environment whose newest program has no initiative, the right answer
+  calls no report.

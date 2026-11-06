@@ -1,6 +1,0 @@
-{
-  "prometheus-main": {"url": "https://internal-prometheus-mcp.main.cloudastructure.net/mcp"},
-  "prometheus-dc01": {"url": "https://internal-prometheus-mcp.dc-01.cloudastructure.net/mcp"},
-  "prometheus-dc02": {"url": "https://internal-prometheus-mcp.dc-02.cloudastructure.net/mcp"},
-  "prometheus-dc03": {"url": "https://internal-prometheus-mcp.dc-03.cloudastructure.net/mcp"}
-}

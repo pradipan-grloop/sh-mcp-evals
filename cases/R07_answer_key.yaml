@@ -1,0 +1,16 @@
+id: R07
+title: Admin asks to check a case study's answer key
+tags: [read, case-studies, content]
+admin_says: "For case study 1 in the program we created most recently, which option is marked as the best answer for each question?"
+expect:
+  must_call: [get_program_content]
+  must_not_call: [import_case_studies, enqueue_job]
+pass_when: >
+  reads case study 1 with get_program_content and names, for each question, the option or
+  options whose isBest is true, exactly as stored; if the program has no case study 1, says so
+fail_if: >
+  names a best answer that isBest does not mark, or offers its own clinical judgment as the
+  answer key without saying it is its own view
+notes: >
+  Related to A09 in mcp-evals.md. Reading one case study with csIndexes [1] is the efficient
+  call; the judge does not require it.
