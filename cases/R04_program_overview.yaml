@@ -1,0 +1,12 @@
+id: R04
+title: Admin asks for an overview of a program
+tags: [read, programs]
+admin_says: "Give me a quick overview of the program we created most recently: its client, grant, faculty and case studies."
+expect:
+  must_call: [list_programs, get_program]
+pass_when: >
+  finds the newest program with list_programs, then sums up its client, Grant ID, faculty and
+  case studies from get_program in a few lines, saying plainly which of those are not set yet
+fail_if: >
+  states a value that is not in the tool results, pastes the raw JSON, or describes a program
+  other than the newest one

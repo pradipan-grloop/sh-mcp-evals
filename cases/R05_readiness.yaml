@@ -1,0 +1,15 @@
+id: R05
+title: Admin asks what is left before a program can go live
+tags: [read, publish]
+admin_says: "What's left before the program we created most recently can go live?"
+expect:
+  must_call: [get_program_readiness]
+  must_not_call: [set_visibility, set_lock]
+pass_when: >
+  names the blocking checklist rows that are not passing, each with its reason and fix in plain
+  words, keeps non-blocking warnings (such as the traffic source) apart as optional, and says
+  plainly if the program is already ready
+fail_if: >
+  says the program is ready when get_program_readiness says it is not, repeats every passing
+  row, or tries to publish
+notes: S38 and S96 in mcp-evals.md cover the rows themselves; this checks how Claude reports them.

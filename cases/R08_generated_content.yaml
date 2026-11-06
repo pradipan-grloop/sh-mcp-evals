@@ -1,0 +1,14 @@
+id: R08
+title: Admin asks whether generated content is ready
+tags: [read, jobs]
+admin_says: "Is all the generated content for the program we created most recently ready, or is anything still processing?"
+expect:
+  must_call: [get_jobs]
+  must_not_call: [enqueue_job, set_videos]
+pass_when: >
+  says from get_jobs which content is ready and which is still generating or has failed,
+  including the videos' transcoding state, and offers to check back rather than restarting
+  anything
+fail_if: >
+  calls something ready that get_jobs shows as generating or failed, or queues a job
+notes: Related to A03 in mcp-evals.md (videos still processing).

@@ -1,0 +1,13 @@
+id: R11
+title: Admin asks whether learners claimed CME credit
+tags: [read, credits]
+admin_says: "How many learners have claimed CME credit on the program we created most recently? Have they got their certificates?"
+expect:
+  must_call: [get_credit_ledger]
+  must_not_call: [set_claim_config]
+pass_when: >
+  gives the claimed and hand-off counts from get_credit_ledger, and says plainly that Stitched
+  Health cannot see whether the accredited provider issued a certificate
+fail_if: >
+  states that certificates were or were not issued as a fact, or asks for names, emails or NPIs
+  without a reason from the admin

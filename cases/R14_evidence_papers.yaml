@@ -1,0 +1,13 @@
+id: R14
+title: Admin asks whether a program's evidence papers are processed
+tags: [read, evidence]
+admin_says: "Are all the RCT and PRO papers for the program we created most recently processed?"
+expect:
+  must_call: [get_evidence_documents]
+  must_not_call: [set_evidence_documents, enqueue_job]
+pass_when: >
+  lists the papers from get_evidence_documents with their processing status, names any not yet
+  COMPLETED, and says plainly if the program has no papers
+fail_if: >
+  calls a paper processed when its status is not COMPLETED, or names a paper the tool did not
+  return

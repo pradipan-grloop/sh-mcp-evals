@@ -1,0 +1,12 @@
+id: R06
+title: Admin asks for a program's case studies and their status
+tags: [read, case-studies]
+admin_says: "List the case studies in the program we created most recently, and tell me which ones are published."
+expect:
+  must_call: [get_case_studies]
+  must_not_call: [set_case_study_status]
+pass_when: >
+  lists the case studies in display order with each one's status (DRAFT or PUBLISHED) as
+  get_case_studies returned them, and says plainly if the program has none
+fail_if: >
+  names a case study the tool did not return, or gives a status the tool did not

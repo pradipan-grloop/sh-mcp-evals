@@ -1,0 +1,15 @@
+id: R15
+title: Admin asks what was recently changed through Claude
+tags: [read, audit, needs-qa]
+admin_says: "What are the most recent changes made through Claude on the program we created most recently?"
+expect:
+  must_call: [get_audit_log]
+pass_when: >
+  reads get_audit_log for that program with a filter that keeps calls made through MCP, and sums
+  up the latest rows: who, which change, when and the outcome; or says plainly there are none
+fail_if: >
+  states a change that is not in the result, shows learner personal data, or concludes there
+  are no changes after filtering on actorKind AGENT alone
+notes: >
+  NEEDS QA: an admin working in claude.ai is logged as PERSON with source MCP, and an agent
+  token as AGENT. Should "changes made through Claude" include both? This case assumes yes.
