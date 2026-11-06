@@ -32,7 +32,7 @@ Then fill in `.env`:
 | Variable | What | Where from |
 |---|---|---|
 | `ANTHROPIC_API_KEY` | Claude, for the runs and the judge | The team's Anthropic account (or sign in with `ant auth login` and leave it empty) |
-| `SH_EVAL_TOKEN_<ENV>_READ`, e.g. `SH_EVAL_TOKEN_QA_READ` | A **READ_ONLY agent token** (`sh_agent_…`) for each environment you run against | A super admin creates one per environment. They last 90 days by default |
+| `SH_EVAL_TOKEN_<ENV>`, e.g. `SH_EVAL_TOKEN_QA` | An **agent token** (`sh_agent_…`) for each environment you run against. evalkit blocks writes itself, whatever the token allows | A super admin creates one per environment. They last 90 days by default |
 
 `.env` is ignored by git. Never put a token in a case file or in `environments.json`.
 

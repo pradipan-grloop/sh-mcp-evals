@@ -11,7 +11,7 @@ from tests.fakes import FakeClaude, health_reply
 @pytest.fixture(autouse=True)
 def no_dotenv(monkeypatch):
     monkeypatch.setattr(cli.config, "load_dotenv", lambda *a, **k: None)
-    monkeypatch.delenv("SH_EVAL_TOKEN_QA_READ", raising=False)
+    monkeypatch.delenv("SH_EVAL_TOKEN_QA", raising=False)
 
 
 def test_cases_lists_the_repo_cases(capsys):
@@ -27,11 +27,11 @@ def test_unknown_environment_names_the_fix(capsys):
 
 def test_missing_token_names_the_variable(capsys):
     assert cli.main(["run", "--env", "qa"]) == 2
-    assert "SH_EVAL_TOKEN_QA_READ" in capsys.readouterr().err
+    assert "SH_EVAL_TOKEN_QA" in capsys.readouterr().err
 
 
 def test_bad_fail_on_is_refused(capsys, monkeypatch):
-    monkeypatch.setenv("SH_EVAL_TOKEN_QA_READ", "sh_agent_x")
+    monkeypatch.setenv("SH_EVAL_TOKEN_QA", "sh_agent_x")
     assert cli.main(["run", "--env", "qa", "--fail-on", "SEVERE"]) == 2
     assert "--fail-on takes CRITICAL, HIGH, MEDIUM, LOW" in capsys.readouterr().err
 
@@ -52,7 +52,7 @@ def _claude(verdict_json):
     ('{"passed": false, "reason": "invented a figure"}', "", 0),
 ])
 def test_run_against_a_url_and_exit_code(stub_url, tmp_path, monkeypatch, capsys, verdict_json, fail_on, code):
-    monkeypatch.setenv("SH_EVAL_TOKEN_QA_READ", "sh_agent_x")
+    monkeypatch.setenv("SH_EVAL_TOKEN_QA", "sh_agent_x")
     monkeypatch.setattr(anthropic, "AsyncAnthropic", lambda: _claude(verdict_json))
     monkeypatch.setattr(runner, "RESULTS", tmp_path / "results")
     monkeypatch.setattr(runner, "COVERAGE", tmp_path / "coverage")

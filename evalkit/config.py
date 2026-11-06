@@ -20,14 +20,14 @@ class Environment:
 
     @property
     def token_var(self):
-        return f"SH_EVAL_TOKEN_{self.name.upper().replace('-', '_')}_READ"
+        return f"SH_EVAL_TOKEN_{self.name.upper().replace('-', '_')}"
 
     def read_token(self):
         token = os.environ.get(self.token_var, "").strip()
         if not token:
             raise ConfigError(
                 f"no token for {self.name}: set {self.token_var} in .env "
-                "(a READ_ONLY agent token, sh_agent_..., from a super admin)")
+                "(an agent token, sh_agent_..., from a super admin)")
         return token
 
 
