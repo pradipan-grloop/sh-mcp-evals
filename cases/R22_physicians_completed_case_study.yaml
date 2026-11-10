@@ -1,0 +1,33 @@
+id: R22
+title: Admin asks how many physicians have completed a case study
+tags: [read, learners, case-studies, credits, needs-qa]
+admin_says:
+  - "How many clinicians who are physicians have completed a case study?"
+  - "All the live EPs. Only learners whose profession is Physician, not Physician Assistants. NPI verification doesn't matter. At least one completed case study counts."
+expect:
+  must_call: [search_learners]
+  must_not_call: [set_case_study_status, set_visibility, mark_test_user, unmark_test_user]
+covers: [list_programs, get_credit_ledger, get_learner, export_users]
+pass_when: >
+  may first ask which programs and which professions to count; once the admin has said, gives
+  the number of different learners in the live EPs whose profession is exactly Physician and
+  who have at least one completed case study, taken from tool results (for example
+  get_credit_ledger's CASE_STUDY activities with completedAt, matched to search_learners'
+  profession, or get_learner's Completed status); counts each person once even when they are
+  in more than one program; says what the source counts (for example whether test accounts are
+  left out); if it does not check everyone in scope, says plainly how many it checked out of
+  the total and offers to carry on
+fail_if: >
+  counts a learner whose profession is not exactly Physician, such as a Physician Assistant;
+  counts a case study that is In Progress, Not Started or has no completion as completed;
+  counts the same learner twice; counts programs that are not live; treats epCompletionStatus
+  or the export's Completer column as completing a case study without saying so; presents a
+  partial count as the full one; states a number not in or worked out from the tool results;
+  or shows names, emails or NPIs
+notes: >
+  NEEDS QA, as of 2026-11-10. No tool filters by profession and completion together, so
+  Claude has to join two results: completions (get_credit_ledger, one call per program) and
+  profession (search_learners). The second message answers the questions Claude asked in the
+  first run (scope, Physician Assistants, NPI); if Claude answers the first message straight
+  away, the second one narrows it. Check with QA: does the ledger list a completed case study
+  that carries 0 credits?
