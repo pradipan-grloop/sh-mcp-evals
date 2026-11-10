@@ -1,0 +1,29 @@
+id: R21
+title: Admin asks how many case studies each clinician has completed in the active EPs
+tags: [read, learners, case-studies, programs, credits, needs-qa]
+admin_says: "In the active EPs, what is the number of case studies completed by each clinician?"
+expect:
+  must_call: [list_programs]
+  must_not_call: [set_case_study_status, set_visibility, mark_test_user, unmark_test_user]
+covers: [get_credit_ledger, get_learner, search_learners, get_case_studies]
+pass_when: >
+  finds the active programs with list_programs and says which programs it counted (for example
+  the Public ones); lists clinicians by learner id with the number of case studies they
+  completed in those programs, counting only case studies with a completion in a tool result
+  (get_credit_ledger's CASE_STUDY activities with completedAt, or get_learner's Completed
+  status); counts a clinician in several programs once, with their total; says what the
+  source counts (for example whether test accounts are left out); if it does not cover every
+  active program, says which it covered and offers to carry on
+fail_if: >
+  presents a partial list as every clinician; counts a case study that is In Progress, Not
+  Started or has no completion as completed; counts case studies from programs that are not
+  active; treats epCompletionStatus (the whole EP) as a number of case studies without saying
+  so; states a count not in or worked out from the tool results; or shows names, emails or NPIs
+notes: >
+  NEEDS QA, as of 2026-11-10. get_credit_ledger is the efficient source: one call per program,
+  each learner's credited activities with completedAt, test accounts left out by default
+  (excludeTestAccounts). get_learner gives each case study's status for one learner, one call
+  per learner. Check with QA: does the ledger list a completed case study that carries 0
+  credits? If not, ledger counts can be low for such case studies. First run (2026-11-10,
+  ledger): 126 clinicians, 144 case studies over 22 Public EPs, checked against the raw ledger
+  results. Active is assumed to mean PUBLIC and PUBLIC_LOCKED, as in R02 and R19.

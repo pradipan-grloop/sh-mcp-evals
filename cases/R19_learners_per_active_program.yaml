@@ -1,0 +1,27 @@
+id: R19
+title: Admin asks how many learners are in each active program
+tags: [read, programs, learners, reports, needs-qa]
+admin_says: "How many users/clinicians do we have in each of our active EPs? Give me the total too."
+expect:
+  must_call: [list_programs]
+  must_not_call: [set_visibility, mark_test_user, unmark_test_user]
+covers: [get_engagement_metrics, search_learners, export_users]
+pass_when: >
+  finds the active programs with list_programs (following every page), says which statuses it
+  counted as active, then gives a learner count for each of those programs taken from a tool
+  result (get_engagement_metrics, search_learners or export_users), says which count it used
+  (for example enrolled or landed, and whether test accounts are excluded), and gives a total
+  that is the sum of the per-program counts; if there are no active programs, or a program has
+  no learners, says so plainly
+fail_if: >
+  states a count that is not in, or added up from, the tool results; counts a PRIVATE or
+  ARCHIVED program as active; leaves out an active program without saying why; presents the
+  number of rows on one page as the full count; asks for names, emails or NPIs; or calls the
+  total a count of unique clinicians when the same learner may be enrolled in more than one
+  program
+notes: >
+  NEEDS QA: which statuses count as active? This case assumes PUBLIC and PUBLIC_LOCKED, as R02
+  does, and only asks Claude to say how it treated UNLISTED. No tool gives one count across all
+  programs, so Claude has to count each program; the per-program sum can count a clinician
+  enrolled in two programs twice. If QA has many active programs, the run can reach max_steps
+  (settings.json) before it finishes.
