@@ -4,6 +4,8 @@ import json
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
+from evalkit import usage as mcp_usage
+
 SEVERITIES = ("CRITICAL", "HIGH", "MEDIUM", "LOW")
 RESULT_ORDER = {"FAIL": 0, "FLAKY": 1, "UNTESTED": 2, "SKIPPED": 3, "PASS": 4}
 
@@ -25,6 +27,11 @@ class CaseResult:
         if self.passed == len(self.runs):
             return "PASS"
         return "FAIL" if self.passed == 0 else "FLAKY"
+
+    @property
+    def usage(self):
+        """MCP tool usage over the runs (evalkit.usage). Informational: never part of status."""
+        return mcp_usage.of_case([r.get("mcpUsage") for r in self.runs], self.skipped)
 
     @property
     def reason(self):
@@ -244,9 +251,17 @@ def markdown(rep):
         "",
     ]
     if rep.cases:
-        out.append(table(["Case", "Title", "Runs", "Status", "Reason"], [
-            [c.case.id, c.case.title, "–" if c.skipped else f"{c.passed}/{len(c.runs)}", c.status, c.reason]
+        out.append(table(["Case", "Title", "Runs", "Status", "MCP tools", "Reason"], [
+            [c.case.id, c.case.title, "–" if c.skipped else f"{c.passed}/{len(c.runs)}", c.status,
+             mcp_usage.describe(c.usage), c.reason]
             for c in rep.cases]))
+        out += ["", "## MCP tool usage", "",
+                "Distinct server tools Claude called per run, worst run per case. Informational: "
+                "a case can PASS and still be Risky.", "",
+                table(["Rating", "Cases", "Which"], [
+                    [label, len(ids), ", ".join(ids) or "–"]
+                    for label, ids in mcp_usage.tally(rep.cases).items()
+                    if ids or label in mcp_usage.RANK])]
     else:
         out.append("No cases ran.")
     out += ["", "## Tool coverage", "",
@@ -278,8 +293,10 @@ def as_json(rep):
         "summary": counts(rep, found),
         "findings": found,
         "cases": [{"id": c.case.id, "title": c.case.title, "status": c.status, "skipped": c.skipped,
-                   "passRate": (c.passed / len(c.runs)) if c.runs else None, "runs": c.runs}
+                   "passRate": (c.passed / len(c.runs)) if c.runs else None, "runs": c.runs,
+                   "mcpUsage": c.usage}
                   for c in rep.cases],
+        "mcpUsage": {label: ids for label, ids in mcp_usage.tally(rep.cases).items()},
         "tools": tool_rows(rep),
         "lint": [asdict(f) for f in rep.lint],
     }
@@ -297,3 +314,38 @@ def terminal(rep, report_path):
         "",
         f"Full report: {report_path}",
     ])
+
+
+def answers(run_dir):
+    """Each run's outcome in plain text: verdict, the judge's reason, the tools Claude called
+    and Claude's final answer, read back from the run's transcripts."""
+    files = sorted(Path(run_dir, "transcripts").glob("*.json"))
+    runs = [json.loads(f.read_text(encoding="utf-8")) for f in files]
+    runs.sort(key=lambda d: (d.get("case", ""), d.get("run", 0)))
+    blocks = []
+    for d in runs:
+        tool_events = [e for e in d.get("events", []) if e.get("kind") == "tool"]
+        used = {}
+        for e in tool_events:
+            used[e["tool"]] = used.get(e["tool"], 0) + 1
+        said = [e["text"] for e in d.get("events", []) if e.get("kind") == "claude"]
+        asked = [e["text"] for e in d.get("events", []) if e.get("kind") == "admin"]
+        blocked = sum(1 for e in tool_events if e.get("blocked"))
+        rule = "=" * 78
+        lines = [
+            "",
+            rule,
+            f"{d.get('case')} · run {d.get('run')} · {'PASS' if d.get('pass') else 'FAIL'} · {d.get('title', '')}",
+            rule,
+            f"Judge:  {d.get('reason', '')}",
+            "Tools:  " + (", ".join(f"{n} ×{c}" for n, c in used.items()) or "none")
+            + f"  ({len(tool_events)} calls, {d.get('modelCalls', 0)} model calls"
+            + (f", {blocked} BLOCKED" if blocked else "") + ")",
+        ]
+        if d.get("error"):
+            lines.append(f"Stopped: {d['error']}")
+        for a in asked:
+            lines.append(f"Admin:  {a}")
+        lines += ["", "Claude's answer:", "", said[-1] if said else "(no answer)"]
+        blocks.append("\n".join(lines))
+    return "\n".join(blocks)

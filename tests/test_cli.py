@@ -63,3 +63,24 @@ def test_run_against_a_url_and_exit_code(stub_url, tmp_path, monkeypatch, capsys
     data = json.loads(next((tmp_path / "results").glob("*/report.json")).read_text(encoding="utf-8"))
     assert data["url"] == stub_url and data["full"] is False
     assert not (tmp_path / "coverage").exists()  # a --case run never replaces coverage/qa.md
+
+
+def test_a_case_run_prints_each_answer(stub_url, tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("SH_EVAL_TOKEN_QA", "sh_agent_x")
+    monkeypatch.setattr(anthropic, "AsyncAnthropic", lambda: _claude('{"passed": true, "reason": "fine"}'))
+    monkeypatch.setattr(runner, "RESULTS", tmp_path / "results")
+    monkeypatch.setattr(runner, "COVERAGE", tmp_path / "coverage")
+    assert cli.main(["run", "--env", "qa", "--url", stub_url, "--case", "R01", "--k", "1"]) == 0
+    out = capsys.readouterr().out
+    assert "R01 · run 1 · PASS" in out and "Judge:  fine" in out
+    assert "Tools:  get_health ×1" in out and "Claude's answer:" in out
+    assert out.index("Full report:") < out.index("Claude's answer:")
+
+
+def test_no_answers_turns_them_off(stub_url, tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("SH_EVAL_TOKEN_QA", "sh_agent_x")
+    monkeypatch.setattr(anthropic, "AsyncAnthropic", lambda: _claude('{"passed": true, "reason": "fine"}'))
+    monkeypatch.setattr(runner, "RESULTS", tmp_path / "results")
+    monkeypatch.setattr(runner, "COVERAGE", tmp_path / "coverage")
+    assert cli.main(["run", "--env", "qa", "--url", stub_url, "--case", "R01", "--k", "1", "--no-answers"]) == 0
+    assert "Claude's answer:" not in capsys.readouterr().out

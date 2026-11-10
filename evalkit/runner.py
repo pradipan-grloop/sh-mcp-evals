@@ -5,11 +5,12 @@ from pathlib import Path
 
 import anthropic
 
-from evalkit import config
+from evalkit import config, usage
 from evalkit.agent import api_tools, converse, system_prompt
 from evalkit.client import AuthError, connect
 from evalkit.grade import Verdict, grade
 from evalkit.lint import lint_tools
+from evalkit.progress import QUIET
 from evalkit.report import CaseResult, Report, as_json, markdown, previous_report
 
 RESULTS = config.ROOT / "results"  # every run's report, JSON and transcripts; kept out of git
@@ -21,7 +22,7 @@ FATAL = (AuthError, anthropic.AuthenticationError, anthropic.PermissionDeniedErr
 
 
 async def run(env, token, settings, cases, *, client, judge_fn, full=True, skills=(),
-              results_root=None, coverage_dir=None, log=print):
+              results_root=None, coverage_dir=None, log=print, progress=None, paint=None):
     """Returns (report, path to report.md). `judge_fn(case, transcript)` -> (passed, reason)."""
     started = datetime.now().astimezone()
     results_root = Path(results_root or RESULTS)
@@ -41,7 +42,8 @@ async def run(env, token, settings, cases, *, client, judge_fn, full=True, skill
         info = session.server_info
         log(f"{env.name}: {info.get('name', 'server')} {info.get('version', '')} · {len(listed)} tools · "
             f"{len(cases)} cases · K={settings.k}")
-        results = [await _run_case(c, session, client, judge_fn, settings, system, tools, out, log)
+        results = [await _run_case(c, session, client, judge_fn, settings, system, tools, out, log,
+                                   progress or QUIET, paint)
                    for c in cases]
     finally:
         await session.close()
@@ -62,29 +64,45 @@ async def run(env, token, settings, cases, *, client, judge_fn, full=True, skill
     return rep, out / "report.md"
 
 
-async def _run_case(case, session, client, judge_fn, settings, system, tools, out, log):
+async def _run_case(case, session, client, judge_fn, settings, system, tools, out, log, progress=QUIET,
+                    paint=None):
     if case.needs_writes:
         reason = WRITE_SKIP.format(state=case.start_state)
         log(f"  {case.id} SKIPPED: {reason}")
-        return CaseResult(case, skipped=reason)
+        result = CaseResult(case, skipped=reason)
+        _log_usage(result, log, paint)
+        return result
     result = CaseResult(case)
     for i in range(1, settings.k + 1):
         transcript = None
+        progress.start(f"{case.id} run {i}/{settings.k}", settings.max_steps)
         try:
-            transcript = await converse(session, client, settings, system, tools, case.admin_says)
+            transcript = await converse(session, client, settings, system, tools, case.admin_says,
+                                        progress=progress)
+            progress.judging()
             verdict = await grade(case, transcript, session, judge_fn)
         except FATAL:
             raise
         except Exception as e:  # an API or network failure in one run: record it and go on
             verdict = Verdict(False, f"run error: {type(e).__name__}: {e}")
+        finally:
+            progress.stop()
         name = f"{case.id}_run{i}.json"
         result.runs.append(_run_record(transcript, verdict, f"transcripts/{name}"))
         _write_json(out / "transcripts" / name,
                     {"case": case.id, "title": case.title, "run": i, "pass": verdict.passed,
-                     "reason": verdict.reason, **(transcript.to_json() if transcript else {})})
+                     "reason": verdict.reason, **(transcript.to_json() if transcript else {}),
+                     "mcpUsage": usage.of_transcript(transcript)})
         status = "PASS" if verdict.passed else f"FAIL · {verdict.reason}"
         log(f"  {case.id} run {i}/{settings.k}: {status}")
+    _log_usage(result, log, paint)
     return result
+
+
+def _log_usage(result, log, paint):
+    """The MCP tool usage block under a case's result lines. Informational: not part of the result."""
+    for line in usage.case_lines(result.case, result.status, result.usage, paint):
+        log(line)
 
 
 def _run_record(t, v, transcript_path):
@@ -93,7 +111,7 @@ def _run_record(t, v, transcript_path):
             "toolCalls": [name for name, _ in t.calls] if t else [],
             "codes": t.codes if t else [], "responseChars": t.response_chars if t else 0,
             "tokens": t.tokens if t else 0, "fallbacks": sorted(t.fallbacks) if t else [],
-            "transcript": transcript_path}
+            "transcript": transcript_path, "mcpUsage": usage.of_transcript(t)}
 
 
 def _write_json(path, data):

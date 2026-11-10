@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 
 from evalkit.client import Result
 from evalkit.guard import why_blocked
+from evalkit.progress import QUIET
 
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
 MAX_TOKENS = 16000
@@ -74,22 +75,24 @@ class Transcript:
                 "fallbacks": sorted(self.fallbacks), "error": self.error}
 
 
-async def converse(session, client, settings, system, tools, admin_says):
+async def converse(session, client, settings, system, tools, admin_says, progress=None):
     """One run of a case. Never raises for something Claude or the server did; an API or
     network failure propagates for the runner to record."""
     t = Transcript()
     messages = []
+    progress = progress or QUIET
     for said in admin_says:
         t.events.append({"kind": "admin", "text": said})
         messages.append({"role": "user", "content": said})
-        if not await _answer(session, client, settings, system, tools, messages, t):
+        if not await _answer(session, client, settings, system, tools, messages, t, progress):
             break
     return t
 
 
-async def _answer(session, client, settings, system, tools, messages, t):
+async def _answer(session, client, settings, system, tools, messages, t, progress=QUIET):
     """Let Claude work until it replies to the admin. False if it could not."""
-    for _ in range(settings.max_steps):
+    for step in range(1, settings.max_steps + 1):
+        progress.step(step)
         resp = await client.beta.messages.create(
             model=settings.model, max_tokens=MAX_TOKENS, system=system, tools=tools,
             messages=messages, output_config={"effort": settings.effort},
@@ -112,6 +115,7 @@ async def _answer(session, client, settings, system, tools, messages, t):
             return True
         results = []
         for u in uses:
+            progress.tool(u.name)
             r = await _call(session, u.name, u.input)
             t.events.append({"kind": "tool", "tool": u.name, "args": u.input, "is_error": r.is_error,
                              "code": r.code, "blocked": r.blocked, "chars": len(r.text), "result": r.text})

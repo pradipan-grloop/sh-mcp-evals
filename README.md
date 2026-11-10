@@ -64,6 +64,12 @@ error or `transcripts/S01_run1.json` says where it stopped.
 
 If `.venv\Scripts` is not on your PATH, `.venv\Scripts\python -m evalkit run --env qa` does the same.
 
+While a run works, a progress line shows the case, Claude's model calls against `max_steps`,
+the tool calls so far, what is happening now and the time taken. When a `--case` or `--tag` run
+ends, each run's verdict, the judge's reason, the tools Claude called and Claude's answer are
+printed after the summary. `--answers` prints them for a full run too, and `--no-answers` leaves
+them out.
+
 Environments are listed in `environments.json`. `allow_writes` will matter once write cases
 exist: set it to `false` for any environment that must never be written to. Run settings
 (model, judge, runs per case, step limit) are in `settings.json`. Every run calls Claude for each run of each case, plus the
@@ -96,6 +102,15 @@ to see the current status.
 | FLAKY | Some runs passed |
 | FAIL | No run passed |
 | SKIPPED | Not run; the reason is shown (write cases, for now) |
+
+**MCP tool usage**
+
+Every run is also rated by how many **distinct** server tools Claude called, counted from the
+run itself (all turns together; repeats count once): 1–2 Best, 3–5 Good, 6–8 Concerning, 9+
+Risky, and 0 "No MCP tools", which usually means the case didn't do its job. With `--k N` the
+worst run counts. The rating is shown under each case's result line, in a summary block at the
+end, in `report.md` and as `mcpUsage` in `report.json` and each transcript. It never changes
+PASS/FAIL: a case can PASS and still be Risky. The bands are `BANDS` in `evalkit/usage.py`.
 
 **Findings**
 

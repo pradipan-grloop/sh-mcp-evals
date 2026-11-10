@@ -3,12 +3,13 @@ import argparse
 import asyncio
 import sys
 
-from evalkit import config, runner
+from evalkit import config, runner, usage
 from evalkit.cases import CaseError, load_cases
 from evalkit.client import AuthError, connect
 from evalkit.judge import judge
 from evalkit.lint import lint_tools
-from evalkit.report import SEVERITIES, fails_threshold, table, terminal
+from evalkit.progress import Progress
+from evalkit.report import SEVERITIES, answers, fails_threshold, table, terminal
 
 
 def main(argv=None):
@@ -39,10 +40,13 @@ def _parser():
     lint.set_defaults(func=cmd_lint)
     run.add_argument("--case", action="append", default=[], metavar="ID", help="only this case (repeatable)")
     run.add_argument("--tag", action="append", default=[], help="only cases with this tag (repeatable)")
-    run.add_argument("--k", type=int, help="runs per case (default: settings.json)")
+    run.add_argument("-k", "--k", type=int, help="runs per case (default: settings.json)")
     run.add_argument("--model", help="model under test (default: settings.json)")
     run.add_argument("--fail-on", default="", metavar="SEVERITIES",
                      help="exit with code 1 if any finding has one of these severities, e.g. HIGH,CRITICAL")
+    run.add_argument("--answers", action=argparse.BooleanOptionalAction, default=None,
+                     help="print each run's verdict, tools and Claude's answer at the end "
+                          "(default: on with --case or --tag, off for a full run)")
     run.set_defaults(func=cmd_run)
     return p
 
@@ -88,12 +92,19 @@ def cmd_run(args):
         raise config.ConfigError(f"--fail-on takes {', '.join(SEVERITIES)}, not {', '.join(bad)}")
     cases = load_cases(ids=args.case, tags=args.tag)
     token = env.read_token()
+    paint = usage.painter(sys.stdout)
     client = None
     if any(not c.needs_writes for c in cases):
         import anthropic
         client = anthropic.AsyncAnthropic()
     rep, path = asyncio.run(runner.run(
         env, token, s, cases, client=client, judge_fn=lambda case, t: judge(client, s, case, t),
-        full=not (args.case or args.tag), skills=config.skills()))
+        full=not (args.case or args.tag), skills=config.skills(), progress=Progress(), paint=paint))
     print(terminal(rep, path))
+    print()
+    print("\n".join(usage.summary_lines(rep.cases, paint)))
+    show = args.answers if args.answers is not None else bool(args.case or args.tag)
+    if show:
+        print(answers(path.parent))
+        print(f"\nTranscripts: {path.parent / 'transcripts'}")
     return 1 if fail_on and fails_threshold(rep, fail_on) else 0
