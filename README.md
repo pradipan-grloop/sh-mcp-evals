@@ -70,7 +70,8 @@ each case, its result (and the reason when it did not pass), the MCP tool rating
 taken, overall and per tool:
 
 ```
-R21  Admin asks how many case studies each clinician has completed in the active EPs — PASS
+Test:       R21 · Admin asks how many case studies each clinician has completed in the active EPs
+  Result:     PASS (1 of 1 runs passed)
   MCP tools:  3 distinct (46 calls) → Good
   Time:       1m 48s total · MCP tools 31.4s
     list_programs      ×2     0.9s
@@ -94,6 +95,20 @@ EP and case-study names come from the MCP tool results. The numbers come from Cl
 one small call to `sources_model` (Claude Haiku 5.5, in `settings.json`) reads them out, and a
 number is shown only if the answer states it, an EP only if a tool returned it. If that call
 fails, the names still show without numbers. `--no-sources` skips the section and the call.
+
+A summary closes every run: how many tests passed, failed, were flaky (and skipped, when any
+were), each with its tests by name, then the MCP tool usage and the total time:
+
+```
+Summary · qa · 2 tests
+  Passed:    1
+      R19  Admin asks how many learners are in each active program
+  Failed:    1
+      R21  Admin asks how many case studies each clinician has completed in the active EPs
+  Flaky:     0
+  MCP tool usage: Best 0 · Good 2 · Concerning 0 · Risky 0 · No MCP tools 0
+  Time:     3m 29s total · MCP tools 44.2s
+```
 
 Then the path to `report.md`, which holds everything else. `--answers` also prints Claude's
 answer for each run; `--details` prints everything (each run's line, Claude's and the judge's

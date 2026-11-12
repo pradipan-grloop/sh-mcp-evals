@@ -69,6 +69,9 @@ def test_an_ep_with_a_bare_zero_goes_under_no_results():
                          {"ep": "EP-695", "count": 0, "case_studies": []}]}
     s = sources.build(sources.index(transcript()), ANSWER + " EP-695: 0.", extracted)
     assert [r["code"] for r in s["eps"]] == ["EP-693"] and "EP-695" in s["noResults"]
+    no_number = {**extracted, "eps": [extracted["eps"][0], {"ep": "EP-695", "count": None, "case_studies": []}]}
+    s = sources.build(sources.index(transcript()), ANSWER, no_number)
+    assert [r["code"] for r in s["eps"]] == ["EP-693"] and "EP-695" in s["noResults"]
 
 
 def test_a_headline_with_a_number_the_answer_lacks_is_dropped():

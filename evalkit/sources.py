@@ -186,7 +186,8 @@ def build(idx, answer, extracted=None):
     for r in rows:
         if not r["caseStudies"]:
             r["caseStudies"] = [{"title": t, "count": None} for t in idx[r["id"]]["caseStudies"]]
-    rows = [r for r in rows if r["count"] != 0 or r["caseStudies"]]  # a bare 0 goes under "No results"
+    # An EP with nothing to show (no number, or 0, and no case studies) goes under "No results".
+    rows = [r for r in rows if r["count"] or r["caseStudies"]]
     rows.sort(key=lambda r: (-(r["count"] if r["count"] is not None else -1), r["code"] or r["name"]))
     listed = {r["id"] for r in rows}
     headline = str((extracted or {}).get("headline") or "").strip()
@@ -221,7 +222,7 @@ def _cut(text, width):
     return text if len(text) <= width else text[:width - 1].rstrip() + "…"
 
 
-def lines(s, indent="  ", max_eps=15, max_studies=5):
+def lines(s, indent="  ", max_eps=25, max_studies=5):
     """The terminal section: headline, then EPs with their case studies and numbers."""
     if not s:
         return []

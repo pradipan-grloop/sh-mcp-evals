@@ -22,7 +22,9 @@ NOT_RATED = "not rated"  # every run stopped on an API or network error, so ther
 RANK = ("Best", "Good", "Concerning", "Risky", NO_TOOLS)
 FLAGGED = ("Concerning", "Risky", NO_TOOLS)  # the summary names these cases
 
-COLOURS = {"Best": "32", "Good": "34", "Concerning": "33", "Risky": "31", NO_TOOLS: "35"}
+COLOURS = {"Best": "32", "Good": "34", "Concerning": "33", "Risky": "31", NO_TOOLS: "35",
+           # test results, used by console.py
+           "Passed": "32", "Failed": "31", "Flaky": "33", "Skipped": "90"}
 
 
 def rating(distinct):

@@ -1,19 +1,30 @@
-"""What `evalkit run` prints. Short by default: per case its result, the MCP tool rating and the
-time taken, then where the full report is. `--details` prints everything, as report.md holds."""
+"""What `evalkit run` prints. Short by default: per test its name, result, the MCP tool rating,
+the time taken and the EPs the answer came from; then a summary of how many tests passed,
+failed or were flaky, and where the full report is. `--details` adds everything report.md holds."""
 import os
+import shutil
 
 from evalkit import sources, timing, usage
 from evalkit.report import terminal
 
+# The summary's rows: (status, label). Colours are in usage.COLOURS.
+OUTCOMES = (("PASS", "Passed"), ("FAIL", "Failed"), ("FLAKY", "Flaky"), ("SKIPPED", "Skipped"))
+
+
+def result_text(result):
+    """'PASS (1 of 1 runs passed)', 'FLAKY (2 of 3 runs passed)', 'SKIPPED (not run)'."""
+    if result.skipped:
+        return "SKIPPED (not run)"
+    return f"{result.status} ({result.passed} of {len(result.runs)} runs passed)"
+
 
 def case_block(result, paint=None, detail=False):
-    """The lines printed once a case has finished."""
+    """The lines printed once a test has finished."""
     paint = paint or usage.plain
     c, u, t = result.case, result.usage, result.timing
-    status = result.status
-    if status == "FLAKY":
-        status = f"FLAKY ({result.passed}/{len(result.runs)} passed)"
-    lines = ["", f"{c.id}  {c.title} — {status}"]
+    label = dict(OUTCOMES)[result.status]
+    lines = ["", f"Test:       {c.id} · {c.title}",
+             f"  Result:     {paint(label, result_text(result))}"]
     if result.status != "PASS" and result.reason:
         lines.append(f"  Reason:     {result.reason}")
     lines.append(f"  MCP tools:  {usage.describe(u, paint)}")
@@ -28,22 +39,36 @@ def case_block(result, paint=None, detail=False):
     return lines
 
 
-def footer(rep, report_path, paint=None, detail=False):
-    """Printed after the last case."""
+def summary(rep, paint=None):
+    """How many tests passed, failed, were flaky or skipped, each with its tests by name; then
+    the MCP tool usage and the total time."""
     paint = paint or usage.plain
-    if detail:
-        return "\n".join([terminal(rep, report_path), "", *usage.summary_lines(rep.cases, paint)])
-    lines = [""]
+    n = len(rep.cases)
+    width = max(40, shutil.get_terminal_size((100, 20)).columns - 1)
+    lines = ["", f"Summary · {rep.env} · {n} test{'' if n == 1 else 's'}"]
+    for status, label in OUTCOMES:
+        tests = [c for c in rep.cases if c.status == status]
+        if status == "SKIPPED" and not tests:
+            continue
+        lines.append(f"  {paint(label, f'{label}:'.ljust(9))}{len(tests):>3}")
+        for c in tests:
+            name = f"{c.case.id}  {c.case.title}"
+            lines.append(f"      {name if len(name) <= width - 6 else name[:width - 7] + '…'}")
+    lines.append(f"  {usage.summary_line(rep.cases, paint)}")
     ran = [c for c in rep.cases if c.timing]
-    if len(rep.cases) > 1:
-        lines.append(usage.summary_line(rep.cases, paint))
-        if ran:
-            total = sum(c.timing["totalMs"] * c.timing["runs"] for c in ran)
-            mcp = [c.timing["mcpMs"] for c in ran]
-            mcp_total = None if None in mcp else sum(m * c.timing["runs"] for m, c in zip(mcp, ran))
-            lines.append(f"Time: {timing.fmt(total)} total · MCP tools {timing.fmt(mcp_total)}")
-    lines.append(f"Full report: {_short(report_path)}")
-    return "\n".join(lines)
+    if ran:
+        total = sum(c.timing["totalMs"] * c.timing["runs"] for c in ran)
+        mcp = [c.timing["mcpMs"] for c in ran]
+        mcp_total = None if None in mcp else sum(m * c.timing["runs"] for m, c in zip(mcp, ran))
+        lines.append(f"  Time:     {timing.fmt(total)} total · MCP tools {timing.fmt(mcp_total)}")
+    return lines
+
+
+def footer(rep, report_path, paint=None, detail=False):
+    """Printed after the last test."""
+    paint = paint or usage.plain
+    head = [terminal(rep, report_path), "", *usage.summary_lines(rep.cases, paint)] if detail else []
+    return "\n".join([*head, *summary(rep, paint), f"Full report: {_short(report_path)}"])
 
 
 def _short(path):

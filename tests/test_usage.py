@@ -119,10 +119,11 @@ async def test_a_run_is_rated_from_what_claude_called(stub_url, tmp_path):
                              "list_programs"])
     rep, md_path, lines = await _run(stub_url, tmp_path, [CASE], client)
     assert rep.cases[0].usage["rating"] == "Good"
-    block = lines[lines.index("R90  Usage check — PASS"):]
-    assert block[1] == "  MCP tools:  3 distinct (5 calls) → Good"
-    assert block[2].startswith("  Time:       ") and " total · MCP tools " in block[2]
-    assert [line.split()[:2] for line in block[3:]] == [  # tools in first-call order, with call counts
+    block = lines[lines.index("Test:       R90 · Usage check"):]
+    assert block[1] == "  Result:     PASS (1 of 1 runs passed)"
+    assert block[2] == "  MCP tools:  3 distinct (5 calls) → Good"
+    assert block[3].startswith("  Time:       ") and " total · MCP tools " in block[3]
+    assert [line.split()[:2] for line in block[4:]] == [  # tools in first-call order, with call counts
         ["list_programs", "×3"], ["get_health", "×1"], ["get_program_readiness", "×1"]]
     out = md_path.parent
     data = json.loads((out / "report.json").read_text(encoding="utf-8"))
@@ -172,7 +173,8 @@ async def test_a_skipped_case_shows_not_run(stub_url, tmp_path):
                 start_state="eval-half-built", pass_when="ok")
     rep, _, lines = await _run(stub_url, tmp_path, [case], _tools_per_run([]))
     assert rep.cases[0].status == "SKIPPED"
-    assert "A05  Publish — SKIPPED" in lines and "  MCP tools:  not run" in lines
+    assert "Test:       A05 · Publish" in lines and "  Result:     SKIPPED (not run)" in lines
+    assert "  MCP tools:  not run" in lines
     assert not any(line.startswith("  Time:") for line in lines)  # nothing ran, so no time
 
 
