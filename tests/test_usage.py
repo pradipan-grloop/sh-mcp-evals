@@ -92,6 +92,8 @@ def _tools_per_run(*per_run):
     seen = {"admin": 0}
 
     def reply(kw):
+        if "format" in kw.get("output_config", {}):  # the sources extraction, not the conversation
+            return [("text", "{}")]
         last = kw["messages"][-1]
         if last["role"] == "user" and isinstance(last["content"], str):
             seen["admin"] += 1

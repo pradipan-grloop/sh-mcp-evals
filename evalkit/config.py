@@ -59,6 +59,7 @@ class Settings:
     judge_effort: str = "high"
     k: int = 3
     max_steps: int = 20
+    sources_model: str = "claude-haiku-5-5"  # reads the answer's numbers per EP; "" turns it off
 
 
 def settings(path=None, **overrides):

@@ -78,6 +78,23 @@ R21  Admin asks how many case studies each clinician has completed in the active
     get_credit_ledger  ×22   14.2s
 ```
 
+When a case touched EPs, a short section follows: the answer's main result in one line, and the
+EPs (code and name) with their case studies, plus the number the answer gives for each:
+
+```
+  Answer:     126 clinicians completed 144 case studies
+  Data from 22 EPs · numbers = case studies completed:
+    EP-646  Default EP & CS test ............................   31
+          · Managing Grade 3 Adverse Events in Bispecific A…
+    ...
+    No results (8): EP-695, EP-694, EP-640, ...
+```
+
+EP and case-study names come from the MCP tool results. The numbers come from Claude's answer:
+one small call to `sources_model` (Claude Haiku 5.5, in `settings.json`) reads them out, and a
+number is shown only if the answer states it, an EP only if a tool returned it. If that call
+fails, the names still show without numbers. `--no-sources` skips the section and the call.
+
 Then the path to `report.md`, which holds everything else. `--answers` also prints Claude's
 answer for each run; `--details` prints everything (each run's line, Claude's and the judge's
 time, per-tool average and slowest call, the summary and findings tables).

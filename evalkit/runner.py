@@ -6,7 +6,7 @@ from pathlib import Path
 
 import anthropic
 
-from evalkit import config, console, timing, usage
+from evalkit import config, console, sources, timing, usage
 from evalkit.agent import api_tools, converse, system_prompt
 from evalkit.client import AuthError, connect
 from evalkit.grade import Verdict, grade
@@ -24,7 +24,7 @@ FATAL = (AuthError, anthropic.AuthenticationError, anthropic.PermissionDeniedErr
 
 async def run(env, token, settings, cases, *, client, judge_fn, full=True, skills=(),
               results_root=None, coverage_dir=None, log=print, progress=None, paint=None,
-              detail=False):
+              detail=False, with_sources=True):
     """Returns (report, path to report.md). `judge_fn(case, transcript)` -> (passed, reason)."""
     started = datetime.now().astimezone()
     results_root = Path(results_root or RESULTS)
@@ -45,7 +45,7 @@ async def run(env, token, settings, cases, *, client, judge_fn, full=True, skill
         log(f"{env.name}: {info.get('name', 'server')} {info.get('version', '')} · {len(listed)} tools · "
             f"{len(cases)} cases · K={settings.k}")
         results = [await _run_case(c, session, client, judge_fn, settings, system, tools, out, log,
-                                   progress or QUIET, paint, detail)
+                                   progress or QUIET, paint, detail, with_sources)
                    for c in cases]
     finally:
         await session.close()
@@ -67,7 +67,7 @@ async def run(env, token, settings, cases, *, client, judge_fn, full=True, skill
 
 
 async def _run_case(case, session, client, judge_fn, settings, system, tools, out, log, progress=QUIET,
-                    paint=None, detail=False):
+                    paint=None, detail=False, with_sources=True):
     if case.needs_writes:
         result = CaseResult(case, skipped=WRITE_SKIP.format(state=case.start_state))
         _log_case(result, log, paint, detail)
@@ -91,12 +91,20 @@ async def _run_case(case, session, client, judge_fn, settings, system, tools, ou
             progress.stop()
         ended = time.perf_counter()
         took = timing.of_run(transcript, (ended - started) * 1000, (ended - judged) * 1000 if judged else 0)
+        found = None
+        if with_sources and transcript is not None:  # after the clock stops: not part of the test's time
+            progress.start(f"{case.id} run {i}/{settings.k}", settings.max_steps)
+            progress.extracting()
+            try:
+                found = await sources.collect(client if settings.sources_model else None, settings, transcript)
+            finally:
+                progress.stop()
         name = f"{case.id}_run{i}.json"
-        result.runs.append(_run_record(transcript, verdict, f"transcripts/{name}", took))
+        result.runs.append(_run_record(transcript, verdict, f"transcripts/{name}", took, found))
         _write_json(out / "transcripts" / name,
                     {"case": case.id, "title": case.title, "run": i, "pass": verdict.passed,
                      "reason": verdict.reason, **(transcript.to_json() if transcript else {}),
-                     "mcpUsage": usage.of_transcript(transcript), "timing": took})
+                     "mcpUsage": usage.of_transcript(transcript), "timing": took, "sources": found})
         if detail:
             status = "PASS" if verdict.passed else f"FAIL · {verdict.reason}"
             log(f"  {case.id} run {i}/{settings.k}: {status} · {timing.fmt(took['totalMs'])}")
@@ -110,13 +118,14 @@ def _log_case(result, log, paint, detail):
         log(line)
 
 
-def _run_record(t, v, transcript_path, took=None):
+def _run_record(t, v, transcript_path, took=None, found=None):
     """One run, in the shape mcp-evals.md ("Recording a run") uses, plus what the report needs."""
     return {"pass": v.passed, "notes": v.reason, "critical": v.critical,
             "toolCalls": [name for name, _ in t.calls] if t else [],
             "codes": t.codes if t else [], "responseChars": t.response_chars if t else 0,
             "tokens": t.tokens if t else 0, "fallbacks": sorted(t.fallbacks) if t else [],
-            "transcript": transcript_path, "mcpUsage": usage.of_transcript(t), "timing": took}
+            "transcript": transcript_path, "mcpUsage": usage.of_transcript(t), "timing": took,
+            "sources": found}
 
 
 def _write_json(path, data):

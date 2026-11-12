@@ -4,6 +4,7 @@ import json
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
+from evalkit import sources as mcp_sources
 from evalkit import timing as mcp_timing
 from evalkit import usage as mcp_usage
 
@@ -38,6 +39,11 @@ class CaseResult:
     def timing(self):
         """Time over the runs (evalkit.timing), or None for a SKIPPED case. Informational only."""
         return None if self.skipped else mcp_timing.of_case([r.get("timing") for r in self.runs])
+
+    @property
+    def sources(self):
+        """The EPs and case studies the first run's answer came from (evalkit.sources), or None."""
+        return next((r.get("sources") for r in self.runs if r.get("sources")), None)
 
     @property
     def reason(self):
@@ -275,6 +281,9 @@ def markdown(rep):
                     table(["Tool", "Calls", "Total", "Avg", "Max"], [
                         [name, t["calls"], mcp_timing.fmt(t["totalMs"]), mcp_timing.fmt(t["avgMs"]),
                          mcp_timing.fmt(t["maxMs"])] for name, t in tool_time.items()])]
+        data_from = mcp_sources.markdown(rep.cases)
+        if data_from:
+            out += [""] + data_from
     else:
         out.append("No cases ran.")
     out += ["", "## Tool coverage", "",
@@ -307,7 +316,7 @@ def as_json(rep):
         "findings": found,
         "cases": [{"id": c.case.id, "title": c.case.title, "status": c.status, "skipped": c.skipped,
                    "passRate": (c.passed / len(c.runs)) if c.runs else None, "runs": c.runs,
-                   "mcpUsage": c.usage, "timing": c.timing}
+                   "mcpUsage": c.usage, "timing": c.timing, "sources": c.sources}
                   for c in rep.cases],
         "mcpUsage": {label: ids for label, ids in mcp_usage.tally(rep.cases).items()},
         "tools": tool_rows(rep),

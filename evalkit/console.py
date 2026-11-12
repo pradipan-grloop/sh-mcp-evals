@@ -2,7 +2,7 @@
 time taken, then where the full report is. `--details` prints everything, as report.md holds."""
 import os
 
-from evalkit import timing, usage
+from evalkit import sources, timing, usage
 from evalkit.report import terminal
 
 
@@ -20,6 +20,11 @@ def case_block(result, paint=None, detail=False):
     if t:
         lines.append(f"  Time:       {timing.summary(t, detail)}")
         lines += timing.tool_lines(t, u.get("tools") or [], detail=detail)
+    s = result.sources
+    if s:
+        if len(result.runs) > 1:
+            s = {**s, "measure": f"{s['measure']} (run 1)" if s.get("measure") else "run 1"}
+        lines += sources.lines(s)
     return lines
 
 

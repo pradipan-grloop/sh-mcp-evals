@@ -47,6 +47,9 @@ def _parser():
     run.add_argument("--answers", action=argparse.BooleanOptionalAction, default=None,
                      help="also print each run's verdict, tools and Claude's answer at the end "
                           "(default: off; with --details, on for --case or --tag runs)")
+    run.add_argument("--no-sources", dest="sources", action="store_false",
+                     help="skip the EP / case-study section and the small extra Claude call that reads "
+                          "the numbers from each answer")
     run.add_argument("--details", action="store_true",
                      help="print everything: each run's line, Claude's and the judge's time, per-tool "
                           "avg/max, the summary and findings tables (all of it is in report.md anyway)")
@@ -103,7 +106,7 @@ def cmd_run(args):
     rep, path = asyncio.run(runner.run(
         env, token, s, cases, client=client, judge_fn=lambda case, t: judge(client, s, case, t),
         full=not (args.case or args.tag), skills=config.skills(), progress=Progress(), paint=paint,
-        detail=args.details))
+        detail=args.details, with_sources=args.sources))
     print(console.footer(rep, path, paint, detail=args.details))
     show = args.answers if args.answers is not None else (args.details and bool(args.case or args.tag))
     if show:
