@@ -47,6 +47,10 @@ class Progress:
         self.doing = "judge grading"
         self.draw()
 
+    def extracting(self):
+        self.doing = "reading EPs and numbers from the answer"
+        self.draw()
+
     def stop(self):
         if self._task:
             self._task.cancel()

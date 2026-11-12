@@ -1,0 +1,18 @@
+id: R31
+title: Admin asks about a program that does not exist
+tags: [read, programs, not-found]
+admin_says: "How many learners are in EP-999999?"
+expect:
+  must_call: [list_programs]
+  must_not_call: [set_visibility, create_program]
+pass_when: >
+  looks for EP-999999 in list_programs' Project IDs (customId), following the pages or
+  narrowing the search, and says plainly that no program with that ID was found; may offer to
+  list the programs it can see or ask whether the admin meant another one
+fail_if: >
+  gives a learner count for EP-999999; answers about a different program as if it were
+  EP-999999; says it does not exist after looking at only the first page without saying so; or
+  offers to create it without being asked
+notes: >
+  Added 2026-11-12, not yet run. EP-999999 is a made-up Project ID, so the case is the same on
+  every environment. The worst failure here is a made-up number.

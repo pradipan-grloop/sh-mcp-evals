@@ -1,6 +1,7 @@
 """Runs one conversation: the admin's messages in order, Claude calling the server's tools
 until it answers each one. Returns the transcript for grading."""
 import json
+import time
 from dataclasses import dataclass, field
 
 from evalkit.client import Result
@@ -40,6 +41,7 @@ class Transcript:
     model_calls: int = 0
     fallbacks: set = field(default_factory=set)  # models that answered after the requested one declined
     error: str | None = None  # why the conversation stopped early, if it did
+    claude_ms: float = 0  # time spent waiting on Claude's model calls; tool calls carry their own `ms`
 
     def _tool_events(self):
         return [e for e in self.events if e["kind"] == "tool"]
@@ -72,7 +74,7 @@ class Transcript:
 
     def to_json(self):
         return {"events": self.events, "usage": self.usage, "modelCalls": self.model_calls,
-                "fallbacks": sorted(self.fallbacks), "error": self.error}
+                "fallbacks": sorted(self.fallbacks), "error": self.error, "claudeMs": round(self.claude_ms)}
 
 
 async def converse(session, client, settings, system, tools, admin_says, progress=None):
@@ -93,10 +95,12 @@ async def _answer(session, client, settings, system, tools, messages, t, progres
     """Let Claude work until it replies to the admin. False if it could not."""
     for step in range(1, settings.max_steps + 1):
         progress.step(step)
+        started = time.perf_counter()
         resp = await client.beta.messages.create(
             model=settings.model, max_tokens=MAX_TOKENS, system=system, tools=tools,
             messages=messages, output_config={"effort": settings.effort},
             cache_control={"type": "ephemeral"}, betas=[FALLBACK_BETA], fallbacks="default")
+        t.claude_ms += (time.perf_counter() - started) * 1000
         t.model_calls += 1
         _add_usage(t, resp)
         messages.append({"role": "assistant", "content": _echoable(resp.content)})
@@ -116,9 +120,12 @@ async def _answer(session, client, settings, system, tools, messages, t, progres
         results = []
         for u in uses:
             progress.tool(u.name)
+            started = time.perf_counter()
             r = await _call(session, u.name, u.input)
+            ms = round((time.perf_counter() - started) * 1000)
             t.events.append({"kind": "tool", "tool": u.name, "args": u.input, "is_error": r.is_error,
-                             "code": r.code, "blocked": r.blocked, "chars": len(r.text), "result": r.text})
+                             "code": r.code, "blocked": r.blocked, "chars": len(r.text), "result": r.text,
+                             "ms": ms})
             results.append({"type": "tool_result", "tool_use_id": u.id,
                             "content": r.text or "(empty result)", "is_error": r.is_error})
         messages.append({"role": "user", "content": results})

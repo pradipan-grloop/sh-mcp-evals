@@ -3,13 +3,13 @@ import argparse
 import asyncio
 import sys
 
-from evalkit import config, runner, usage
+from evalkit import config, console, runner, usage
 from evalkit.cases import CaseError, load_cases
 from evalkit.client import AuthError, connect
 from evalkit.judge import judge
 from evalkit.lint import lint_tools
 from evalkit.progress import Progress
-from evalkit.report import SEVERITIES, answers, fails_threshold, table, terminal
+from evalkit.report import SEVERITIES, answers, fails_threshold, table
 
 
 def main(argv=None):
@@ -45,8 +45,14 @@ def _parser():
     run.add_argument("--fail-on", default="", metavar="SEVERITIES",
                      help="exit with code 1 if any finding has one of these severities, e.g. HIGH,CRITICAL")
     run.add_argument("--answers", action=argparse.BooleanOptionalAction, default=None,
-                     help="print each run's verdict, tools and Claude's answer at the end "
-                          "(default: on with --case or --tag, off for a full run)")
+                     help="also print each run's verdict, tools and Claude's answer at the end "
+                          "(default: off; with --details, on for --case or --tag runs)")
+    run.add_argument("--no-sources", dest="sources", action="store_false",
+                     help="skip the EP / case-study section and the small extra Claude call that reads "
+                          "the numbers from each answer")
+    run.add_argument("--details", action="store_true",
+                     help="print everything: each run's line, Claude's and the judge's time, per-tool "
+                          "avg/max, the summary and findings tables (all of it is in report.md anyway)")
     run.set_defaults(func=cmd_run)
     return p
 
@@ -99,11 +105,10 @@ def cmd_run(args):
         client = anthropic.AsyncAnthropic()
     rep, path = asyncio.run(runner.run(
         env, token, s, cases, client=client, judge_fn=lambda case, t: judge(client, s, case, t),
-        full=not (args.case or args.tag), skills=config.skills(), progress=Progress(), paint=paint))
-    print(terminal(rep, path))
-    print()
-    print("\n".join(usage.summary_lines(rep.cases, paint)))
-    show = args.answers if args.answers is not None else bool(args.case or args.tag)
+        full=not (args.case or args.tag), skills=config.skills(), progress=Progress(), paint=paint,
+        detail=args.details, with_sources=args.sources))
+    print(console.footer(rep, path, paint, detail=args.details))
+    show = args.answers if args.answers is not None else (args.details and bool(args.case or args.tag))
     if show:
         print(answers(path.parent))
         print(f"\nTranscripts: {path.parent / 'transcripts'}")

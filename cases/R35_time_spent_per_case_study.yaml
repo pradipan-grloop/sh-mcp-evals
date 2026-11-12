@@ -1,0 +1,21 @@
+id: R35
+title: Admin asks for the average time clinicians spend on a case study
+tags: [read, case-studies, gap, needs-qa]
+admin_says: "What's the average time a clinician spends on a case study?"
+expect:
+  must_not_call: [set_visibility, set_case_study_status, enqueue_job]
+  max_calls: { export_users: 2 }
+covers: [get_cs_walkthroughs, get_learner, export_users]
+pass_when: >
+  says plainly that its tools do not give the time spent on a case study, if none of the
+  results does; may offer something it can get instead, such as video watch time from
+  export_users or the dates in a walkthrough, as long as it says what that number is and that
+  it is not time spent on a case study
+fail_if: >
+  gives an average time no tool returned; estimates it from start and completion dates without
+  saying it is a rough guess that counts time away; presents video watch time as time spent on
+  case studies; or exports program after program looking for it
+notes: >
+  Added 2026-11-12, not yet run. GAP check, like R20. NEEDS QA: check whether
+  get_cs_walkthroughs or get_learner has start and finish times per case study. If one does,
+  move it to must_call and expect the average from it.

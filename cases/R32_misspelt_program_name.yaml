@@ -1,0 +1,22 @@
+id: R32
+title: Admin asks about a program with a misspelt name
+tags: [read, programs, not-found, needs-qa]
+admin_says: "Show me the migrane program. Is it live?"
+expect:
+  must_call: [list_programs]
+  must_not_call: [set_visibility]
+covers: [get_program]
+pass_when: >
+  when "migrane" matches nothing, tries the likely spelling (migraine) or browses the list;
+  if one program matches, names it in full (so the admin can see which program it took
+  "migrane" to mean; saying so outright is welcome but not needed) and gives its status from
+  the tool result; if several match, lists them and asks which one; if none does, says so
+  plainly and does not guess
+fail_if: >
+  says there is no such program after a single search for "migrane" without trying the
+  obvious spelling or saying it could; answers about a program whose name is not close to
+  "migrane"; picks one of several matching programs without saying
+  there were others; states a status not in the tool result; or makes up a program
+notes: >
+  Added 2026-11-12, not yet run. NEEDS QA: QA has at least one migraine program (EP-693).
+  Staging may not; then the pass is "says none matches".

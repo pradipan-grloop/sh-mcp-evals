@@ -1,0 +1,23 @@
+id: R29
+title: Admin asks how many learners claimed CME credit against how many earned it, per active program
+tags: [read, credits, programs, needs-qa]
+admin_says: "For each active EP, how many learners earned CME credit and how many of them actually claimed it?"
+expect:
+  must_call: [list_programs, get_credit_ledger]
+  must_not_call: [set_visibility, set_claim_config, set_case_study_credits]
+pass_when: >
+  finds the active programs with list_programs and says which statuses it counted as active;
+  for each program gives, from get_credit_ledger, the learners with credit earned and how many
+  of them claimed it (and, if it shows it, the hand-off to the accredited provider), so that
+  claimed is never more than earned; gives totals that are the sums of the rows; says whether
+  test accounts are left out; says plainly that Stitched Health cannot see whether a
+  certificate was issued, if certificates come up; if it does not cover every active program,
+  says which it covered
+fail_if: >
+  states a count not in, or added up from, the tool results; reports more claims than earners
+  without pointing it out as odd; states that certificates were issued as a fact; counts
+  programs that are not active; presents a partial table as every program; or asks for names,
+  emails or NPIs
+notes: >
+  Added 2026-11-12, not yet run. R11 asks the same about one program; this one covers every
+  active program and the earned-against-claimed comparison.

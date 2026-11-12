@@ -92,6 +92,8 @@ def _tools_per_run(*per_run):
     seen = {"admin": 0}
 
     def reply(kw):
+        if "format" in kw.get("output_config", {}):  # the sources extraction, not the conversation
+            return [("text", "{}")]
         last = kw["messages"][-1]
         if last["role"] == "user" and isinstance(last["content"], str):
             seen["admin"] += 1
@@ -117,13 +119,12 @@ async def test_a_run_is_rated_from_what_claude_called(stub_url, tmp_path):
                              "list_programs"])
     rep, md_path, lines = await _run(stub_url, tmp_path, [CASE], client)
     assert rep.cases[0].usage["rating"] == "Good"
-    assert lines[-5:] == [
-        "  R90 run 1/1: PASS",
-        "  R90  Usage check",
-        "    Result:     PASS",
-        "    MCP tools:  3 distinct (5 calls) → Good",
-        "    Tools used: list_programs, get_health, get_program_readiness",
-    ]
+    block = lines[lines.index("Test:       R90 · Usage check"):]
+    assert block[1] == "  Result:     PASS (1 of 1 runs passed)"
+    assert block[2] == "  MCP tools:  3 distinct (5 calls) → Good"
+    assert block[3].startswith("  Time:       ") and " total · MCP tools " in block[3]
+    assert [line.split()[:2] for line in block[4:]] == [  # tools in first-call order, with call counts
+        ["list_programs", "×3"], ["get_health", "×1"], ["get_program_readiness", "×1"]]
     out = md_path.parent
     data = json.loads((out / "report.json").read_text(encoding="utf-8"))
     assert data["cases"][0]["mcpUsage"]["rating"] == "Good"
@@ -153,7 +154,7 @@ async def test_k3_rates_each_run_and_shows_the_worst(stub_url, tmp_path):
     c = rep.cases[0]
     assert [r["mcpUsage"]["distinct"] for r in c.runs] == [1, 4, 2]
     assert c.usage["rating"] == "Good" and c.status == "PASS"
-    assert "    MCP tools:  1–4 tools (1–4 calls) → Good (worst of 3)" in lines
+    assert "  MCP tools:  1–4 tools (1–4 calls) → Good (worst of 3)" in lines
 
 
 async def test_the_rating_never_changes_the_result(stub_url, tmp_path):
@@ -172,4 +173,15 @@ async def test_a_skipped_case_shows_not_run(stub_url, tmp_path):
                 start_state="eval-half-built", pass_when="ok")
     rep, _, lines = await _run(stub_url, tmp_path, [case], _tools_per_run([]))
     assert rep.cases[0].status == "SKIPPED"
-    assert "    MCP tools:  not run" in lines and "    Tools used: –" in lines
+    assert "Test:       A05 · Publish" in lines and "  Result:     SKIPPED (not run)" in lines
+    assert "  MCP tools:  not run" in lines
+    assert not any(line.startswith("  Time:") for line in lines)  # nothing ran, so no time
+
+
+def test_summary_line_for_several_cases():
+    class R:
+        def __init__(self, cid, rating):
+            self.case, self.usage = Case(id=cid, title="t", path=None, admin_says=("hi",)), {"rating": rating}
+    results = [R("R01", "Best"), R("R08", "Concerning"), R("R17", "Concerning"), R("A06", "Risky")]
+    assert usage.summary_line(results) == (
+        "MCP tool usage: Best 1 · Good 0 · Concerning 2 (R08, R17) · Risky 1 (A06) · No MCP tools 0")

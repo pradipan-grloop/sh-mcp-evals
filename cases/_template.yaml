@@ -37,7 +37,8 @@ expect:
 # DISTINCT server tools Claude actually called (all turns together; repeats count once):
 #   1-2 Best · 3-5 Good · 6-8 Concerning · 9+ Risky · 0 No MCP tools (the case likely didn't work)
 # With --k N the worst run counts. It never changes PASS/FAIL: a case can PASS and be Risky.
-# The bands live in evalkit/usage.py (BANDS).
+# The bands live in evalkit/usage.py (BANDS). The time taken (overall, and per MCP tool) is
+# measured automatically too.
 
 # Graded by Claude reading the transcript. Write what Claude does, in plain words.
 pass_when: lists the live programs by name, taken from the tool result

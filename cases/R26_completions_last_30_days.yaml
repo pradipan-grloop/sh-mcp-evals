@@ -1,0 +1,24 @@
+id: R26
+title: Admin asks how many case studies were completed in the last 30 days
+tags: [read, case-studies, credits, dates, needs-qa]
+admin_says: "How many case studies were completed in the last 30 days across our live EPs?"
+expect:
+  must_call: [list_programs]
+  must_not_call: [set_visibility, set_case_study_status, mark_test_user, unmark_test_user]
+covers: [get_credit_ledger, get_learner]
+pass_when: >
+  says which exact dates it took as the last 30 days (for example 2026-10-13 to 2026-11-12) and,
+  if it does not know today's date, how it chose them or asks; finds the live programs with
+  list_programs; counts case-study completions whose completion date falls inside that range,
+  using the tool's date filter (get_credit_ledger from and to) or the completedAt dates in the
+  results; gives the total and the count per program; says whether test accounts are left out;
+  if it does not cover every live program, says which it covered
+fail_if: >
+  does not say which dates it used; counts a completion outside the range; counts In Progress
+  or Not Started case studies; states a count not in, or added up from, the tool results;
+  counts programs that are not live; presents a partial count as the full one; or asks for
+  names, emails or NPIs
+notes: >
+  Added 2026-11-12, not yet run. Tests date filtering. Claude is not told today's date in the
+  system prompt, so it has to say what it assumed. get_credit_ledger's from and to work on
+  completion dates, in UTC.
