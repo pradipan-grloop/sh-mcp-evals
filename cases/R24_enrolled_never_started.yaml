@@ -1,0 +1,25 @@
+id: R24
+title: Admin asks which clinicians enrolled but never started a case study
+tags: [read, learners, case-studies, needs-qa]
+admin_says: "On the program we created most recently, which clinicians signed up but never started a single case study?"
+expect:
+  must_call: [list_programs, search_learners]
+  must_not_call: [set_visibility, mark_test_user, unmark_test_user]
+covers: [get_learner, get_credit_ledger, get_case_studies]
+pass_when: >
+  finds the most recently created program with list_programs and names it; finds its learners
+  with search_learners (following every page); lists, by learner id, those whose progress in a
+  tool result shows no case study started (for example get_learner shows every case study as
+  Not Started); gives how many that is out of all learners on the program; if it checks only
+  some learners, says how many out of the total and offers to carry on; if the program has no
+  learners, says so plainly
+fail_if: >
+  lists a learner who has a case study In Progress or Completed; treats "no completion in the
+  credit ledger" as "never started" without saying so; presents a partial list as everyone;
+  states a learner or count not in the tool results; or asks for names, emails or NPIs without
+  a reason from the admin
+notes: >
+  Added 2026-11-12, not yet run. Drop-off check. get_credit_ledger only lists credited
+  completions, so it cannot tell "never started" from "started but not finished"; get_learner
+  (one call per learner) or search_learners' per-program progress can. NEEDS QA: if the most
+  recent program is a draft with no learners, Claude should just say so.

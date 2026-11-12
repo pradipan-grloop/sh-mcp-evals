@@ -1,0 +1,26 @@
+id: R38
+title: Admin narrows a learner count over three follow-up questions
+tags: [read, learners, multi-turn, needs-qa]
+admin_says:
+  - "How many learners are on the live program we created most recently?"
+  - "Now only physicians."
+  - "And of those, only the ones who signed up in the last 30 days."
+expect:
+  must_call: [list_programs, search_learners]
+  must_not_call: [set_visibility, mark_test_user, unmark_test_user]
+pass_when: >
+  answers each message about the same program (naming it at least once in the conversation;
+  it need not repeat the name every time); the second answer counts only
+  learners whose profession is exactly Physician; the third keeps both the program and the
+  Physician filter and adds the sign-up date, saying which dates it took as the last 30 days
+  (not needed when the count is already 0, as the dates cannot change it);
+  each count comes from tool results, and each is no larger than the one before; if a tool
+  result has no sign-up date, says so instead of guessing
+fail_if: >
+  drops an earlier filter (answers about all programs, or all professions); switches to a
+  different program; counts a Physician Assistant as a physician; gives a later count larger
+  than an earlier one without explaining it; states a count not in, or worked out from, the
+  tool results; or asks for names, emails or NPIs
+notes: >
+  Added 2026-11-12, not yet run. Checks that Claude keeps the context across turns. NEEDS QA:
+  does search_learners give a sign-up date? If not, the third answer should say so.

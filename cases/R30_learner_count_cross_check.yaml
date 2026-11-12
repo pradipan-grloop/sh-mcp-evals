@@ -1,0 +1,21 @@
+id: R30
+title: Admin asks for one program's learner count checked two ways
+tags: [read, learners, reports, cross-check, needs-qa]
+admin_says: "How many learners does the live program we created most recently have? Check it two ways, the engagement numbers and the learner search, and tell me whether they agree."
+expect:
+  must_call: [list_programs, get_engagement_metrics, search_learners]
+  must_not_call: [set_visibility, mark_test_user, unmark_test_user]
+pass_when: >
+  finds the most recently created live program with list_programs and names it; gives the
+  learner count from get_engagement_metrics and the count from search_learners (its full total,
+  not the rows on one page); says plainly whether they agree; if they differ, gives the likely
+  reason the tool results support (for example engagement leaves out test and banned accounts,
+  or counts a different step) or says it cannot tell why
+fail_if: >
+  gives only one of the two counts; picks one and drops the other without saying so when they
+  differ; presents the rows on one page as the total; states a reason for a difference as fact
+  when the results do not show it; states a count not in the tool results; or asks for names,
+  emails or NPIs
+notes: >
+  Added 2026-11-12, not yet run. A real mismatch that Claude cannot explain is worth reporting
+  to the backend team: it can be a bug in one of the two tools, not in Claude.

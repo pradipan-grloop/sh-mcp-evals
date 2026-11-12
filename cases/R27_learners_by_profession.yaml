@@ -1,0 +1,25 @@
+id: R27
+title: Admin asks for the learners in the active programs broken down by profession
+tags: [read, learners, programs, reports, needs-qa]
+admin_says: "Break down the learners in our active EPs by profession."
+expect:
+  must_call: [list_programs, search_learners]
+  must_not_call: [set_visibility, mark_test_user, unmark_test_user]
+covers: [export_users]
+pass_when: >
+  finds the active programs with list_programs and says which statuses it counted as active;
+  counts learners per profession from search_learners' profession field (following every
+  page), keeping every profession the results show as its own row (for example Physician,
+  Physician Assistant, Nurse Practitioner, Pharmacist) and the learners with no profession as
+  "not given"; gives a total that is the sum of the rows; says whether a learner in two
+  programs is counted once or twice; if it does not cover every learner, says how many it
+  covered out of the total and offers to carry on
+fail_if: >
+  merges Physician Assistant (or any other profession) into Physician; drops learners with no
+  profession without saying so; states a count not in, or added up from, the tool results;
+  presents a partial breakdown as the full one; counts programs that are not active; or asks
+  for names, emails or NPIs
+notes: >
+  Added 2026-11-12, not yet run. The trap is the one R22 found: "Physician" and "Physician
+  Assistant" are different professions. May reach max_steps on QA if search_learners has to be
+  paged for every program.

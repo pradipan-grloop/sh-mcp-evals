@@ -1,0 +1,21 @@
+id: R34
+title: Admin asks whether any live program has no learners
+tags: [read, programs, learners, needs-qa]
+admin_says: "Are any of our live EPs without a single learner?"
+expect:
+  must_call: [list_programs]
+  must_not_call: [set_visibility, mark_test_user, unmark_test_user]
+covers: [get_engagement_metrics, search_learners]
+pass_when: >
+  finds the live programs with list_programs (PUBLIC and PUBLIC_LOCKED; saying which statuses
+  it counted is welcome but not needed); checks each one's learner count in a tool result; names every live program with 0 learners
+  and says 0 plainly, or says none has 0; says which count it used (for example enrolled or
+  landed, and whether test accounts are left out); if it does not check every live program,
+  says which it checked
+fail_if: >
+  calls a program empty when a tool result shows learners, or the other way round; treats 0 as
+  an error or a missing result; states a count not in the tool results; counts programs that
+  are not live; presents a partial check as every program; or asks for names, emails or NPIs
+notes: >
+  Added 2026-11-12, not yet run. R19's QA run had EPs with no results; this case checks that
+  Claude reports 0 plainly.

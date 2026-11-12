@@ -1,0 +1,25 @@
+id: R23
+title: Admin asks for the completion rate of each active program
+tags: [read, programs, learners, reports, needs-qa]
+admin_says: "What's the completion rate for each of our active EPs?"
+expect:
+  must_call: [list_programs]
+  must_not_call: [set_visibility, mark_test_user, unmark_test_user]
+covers: [get_engagement_metrics, search_learners, export_users]
+pass_when: >
+  finds the active programs with list_programs (following every page) and says which statuses
+  it counted as active; for each program gives the completed count, the enrolled (or started)
+  count and the rate, with both counts taken from the same tool result so the rate is
+  completed divided by that base; says what "completed" and the base mean (for example the
+  engagement ladder's steps, or epCompletionStatus) and whether test accounts are left out;
+  gives 0% or "no learners yet" plainly where that is the case; if it does not cover every
+  active program, says which it covered and offers to carry on
+fail_if: >
+  states a count or rate that is not in, or worked out from, the tool results; divides counts
+  taken from different tools or with different filters without saying so; gets the division
+  wrong; counts a PRIVATE or ARCHIVED program as active; presents a partial list as every
+  active program; or asks for names, emails or NPIs
+notes: >
+  Added 2026-11-12, not yet run. NEEDS QA: what does "completion rate" mean to the team, the
+  whole EP or at least one case study? This case accepts either as long as Claude says which.
+  Active is assumed to mean PUBLIC and PUBLIC_LOCKED, as in R02 and R19.

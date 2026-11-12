@@ -1,0 +1,19 @@
+id: R40
+title: Admin asks how many programs are live, answered with list_programs alone
+tags: [read, programs, efficiency, needs-qa]
+admin_says: "How many of our programs are live right now? Just the number."
+expect:
+  must_call: [list_programs]
+  must_not_call: [search_learners, get_engagement_metrics, export_users, get_credit_ledger, get_case_studies]
+  max_calls: { list_programs: 4 }
+pass_when: >
+  gives the number of live programs from list_programs (using its total, or following every
+  page), says which statuses it counted as live, and keeps the answer short
+fail_if: >
+  gives a number not in, or counted from, the tool results; counts only the first page when
+  there are more; counts a PRIVATE or ARCHIVED program as live; or pads the answer with details
+  the admin did not ask for
+notes: >
+  Added 2026-11-12, not yet run. Efficiency check for the MCP tool usage rating: one tool should
+  do (Best). max_calls allows a few pages or one call per live status (PUBLIC and
+  PUBLIC_LOCKED). Active is assumed to mean PUBLIC and PUBLIC_LOCKED, as in R02.

@@ -1,0 +1,25 @@
+id: R39
+title: Admin asks for the busiest live program, then its top clinicians
+tags: [read, case-studies, credits, multi-turn, needs-qa]
+admin_says:
+  - "Which of our live EPs has the most case studies completed?"
+  - "Who are its top 3 clinicians by number of completed case studies?"
+expect:
+  must_call: [list_programs, get_credit_ledger]
+  must_not_call: [set_visibility, mark_test_user, unmark_test_user]
+covers: [get_learner]
+pass_when: >
+  first answer: finds the live programs, counts completed case studies per program from tool
+  results (for example get_credit_ledger's CASE_STUDY activities with completedAt) and names
+  the program with the most, with its count, saying how ties were handled; second answer:
+  stays on that same program and lists its top 3 clinicians by learner id with their completed
+  case-study counts, highest first, saying how ties were handled; if the first answer covered
+  only some programs, says so
+fail_if: >
+  answers the second question about a different program or about every program; lists
+  clinicians in the wrong order; counts In Progress or Not Started case studies; states a
+  count not in, or added up from, the tool results; or shows names, emails or NPIs without a
+  reason from the admin
+notes: >
+  Added 2026-11-12, not yet run. Checks that "its" is carried over from the first answer.
+  The first message needs one get_credit_ledger call per live program, like R21.
