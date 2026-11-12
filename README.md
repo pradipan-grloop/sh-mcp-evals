@@ -65,10 +65,22 @@ error or `transcripts/S01_run1.json` says where it stopped.
 If `.venv\Scripts` is not on your PATH, `.venv\Scripts\python -m evalkit run --env qa` does the same.
 
 While a run works, a progress line shows the case, Claude's model calls against `max_steps`,
-the tool calls so far, what is happening now and the time taken. When a `--case` or `--tag` run
-ends, each run's verdict, the judge's reason, the tools Claude called and Claude's answer are
-printed after the summary. `--answers` prints them for a full run too, and `--no-answers` leaves
-them out.
+the tool calls so far, what is happening now and the time taken. The output is kept short: for
+each case, its result (and the reason when it did not pass), the MCP tool rating and the time
+taken, overall and per tool:
+
+```
+R21  Admin asks how many case studies each clinician has completed in the active EPs — PASS
+  MCP tools:  3 distinct (46 calls) → Good
+  Time:       1m 48s total · MCP tools 31.4s
+    list_programs      ×2     0.9s
+    search_learners    ×22   16.3s
+    get_credit_ledger  ×22   14.2s
+```
+
+Then the path to `report.md`, which holds everything else. `--answers` also prints Claude's
+answer for each run; `--details` prints everything (each run's line, Claude's and the judge's
+time, per-tool average and slowest call, the summary and findings tables).
 
 Environments are listed in `environments.json`. `allow_writes` will matter once write cases
 exist: set it to `false` for any environment that must never be written to. Run settings
@@ -88,7 +100,14 @@ Each run writes to `results/<date>_<time>_<env>/`:
 | `report.json` | The same data, for comparing runs |
 | `transcripts/<case>_run<n>.json` | Everything that was said and every tool call and result. Read these to see why a run failed |
 
-The terminal shows the summary and the findings when the run ends.
+The terminal shows each case's result, rating and time; `--details` adds the summary and the
+findings.
+
+**Time** is measured during the run: the whole run, the time waiting on the MCP server (each
+tool call is timed; `ms` on every tool event in the transcript), on Claude's model calls and on
+the judge. It is in `report.md` (a Time column and an "MCP tool timing" table, slowest tool
+first) and as `timing` in `report.json` and each transcript. With `--k N` the time is the average
+per run. Like the rating, it never changes PASS/FAIL.
 
 `results/` is kept out of git, because transcripts can hold environment data. A **full** run
 (no `--case` or `--tag`) also writes `coverage/<env>.md`. Commit that file when you want the team

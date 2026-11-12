@@ -56,7 +56,7 @@ def test_run_against_a_url_and_exit_code(stub_url, tmp_path, monkeypatch, capsys
     monkeypatch.setattr(anthropic, "AsyncAnthropic", lambda: _claude(verdict_json))
     monkeypatch.setattr(runner, "RESULTS", tmp_path / "results")
     monkeypatch.setattr(runner, "COVERAGE", tmp_path / "coverage")
-    args = ["run", "--env", "qa", "--url", stub_url, "--case", "R01", "--k", "1"]
+    args = ["run", "--env", "qa", "--url", stub_url, "--case", "R01", "--k", "1", "--details"]
     assert cli.main(args + (["--fail-on", fail_on] if fail_on else [])) == code
     out = capsys.readouterr().out
     assert "| Cases | 1 ·" in out and "Full report:" in out
@@ -70,7 +70,7 @@ def test_a_case_run_prints_each_answer(stub_url, tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(anthropic, "AsyncAnthropic", lambda: _claude('{"passed": true, "reason": "fine"}'))
     monkeypatch.setattr(runner, "RESULTS", tmp_path / "results")
     monkeypatch.setattr(runner, "COVERAGE", tmp_path / "coverage")
-    assert cli.main(["run", "--env", "qa", "--url", stub_url, "--case", "R01", "--k", "1"]) == 0
+    assert cli.main(["run", "--env", "qa", "--url", stub_url, "--case", "R01", "--k", "1", "--answers"]) == 0
     out = capsys.readouterr().out
     assert "R01 · run 1 · PASS" in out and "Judge:  fine" in out
     assert "Tools:  get_health ×1" in out and "Claude's answer:" in out
@@ -84,3 +84,30 @@ def test_no_answers_turns_them_off(stub_url, tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(runner, "COVERAGE", tmp_path / "coverage")
     assert cli.main(["run", "--env", "qa", "--url", stub_url, "--case", "R01", "--k", "1", "--no-answers"]) == 0
     assert "Claude's answer:" not in capsys.readouterr().out
+
+
+def test_the_default_output_is_short(stub_url, tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("SH_EVAL_TOKEN_QA", "sh_agent_x")
+    monkeypatch.setattr(anthropic, "AsyncAnthropic", lambda: _claude('{"passed": true, "reason": "fine"}'))
+    monkeypatch.setattr(runner, "RESULTS", tmp_path / "results")
+    monkeypatch.setattr(runner, "COVERAGE", tmp_path / "coverage")
+    assert cli.main(["run", "--env", "qa", "--url", stub_url, "--case", "R01", "-k", "1"]) == 0
+    out = capsys.readouterr().out
+    assert "R01  Admin asks whether the platform is healthy — PASS" in out
+    assert "  MCP tools:  1 distinct (1 call) → Best" in out
+    assert "  Time:       " in out and " total · MCP tools " in out
+    assert "    get_health  ×1  " in out and "Full report: " in out
+    for gone in ("| Cases |", "| Severity |", "Claude's answer:", "Judge:", "MCP tool usage"):
+        assert gone not in out  # tables, findings, answers and the judge's notes are in report.md
+
+
+def test_details_prints_everything(stub_url, tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("SH_EVAL_TOKEN_QA", "sh_agent_x")
+    monkeypatch.setattr(anthropic, "AsyncAnthropic", lambda: _claude('{"passed": true, "reason": "fine"}'))
+    monkeypatch.setattr(runner, "RESULTS", tmp_path / "results")
+    monkeypatch.setattr(runner, "COVERAGE", tmp_path / "coverage")
+    assert cli.main(["run", "--env", "qa", "--url", stub_url, "--case", "R01", "-k", "1", "--details"]) == 0
+    out = capsys.readouterr().out
+    assert "  R01 run 1/1: PASS · " in out and "| Cases | 1 ·" in out and "MCP tool usage" in out
+    assert " · Claude " in out and " · judge " in out and "(avg " in out
+    assert "Claude's answer:" in out  # --details keeps answers on for a --case run

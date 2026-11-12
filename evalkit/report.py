@@ -4,6 +4,7 @@ import json
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
+from evalkit import timing as mcp_timing
 from evalkit import usage as mcp_usage
 
 SEVERITIES = ("CRITICAL", "HIGH", "MEDIUM", "LOW")
@@ -32,6 +33,11 @@ class CaseResult:
     def usage(self):
         """MCP tool usage over the runs (evalkit.usage). Informational: never part of status."""
         return mcp_usage.of_case([r.get("mcpUsage") for r in self.runs], self.skipped)
+
+    @property
+    def timing(self):
+        """Time over the runs (evalkit.timing), or None for a SKIPPED case. Informational only."""
+        return None if self.skipped else mcp_timing.of_case([r.get("timing") for r in self.runs])
 
     @property
     def reason(self):
@@ -251,9 +257,9 @@ def markdown(rep):
         "",
     ]
     if rep.cases:
-        out.append(table(["Case", "Title", "Runs", "Status", "MCP tools", "Reason"], [
+        out.append(table(["Case", "Title", "Runs", "Status", "MCP tools", "Time", "Reason"], [
             [c.case.id, c.case.title, "–" if c.skipped else f"{c.passed}/{len(c.runs)}", c.status,
-             mcp_usage.describe(c.usage), c.reason]
+             mcp_usage.describe(c.usage), mcp_timing.summary(c.timing, detail=True) or "–", c.reason]
             for c in rep.cases]))
         out += ["", "## MCP tool usage", "",
                 "Distinct server tools Claude called per run, worst run per case. Informational: "
@@ -262,6 +268,13 @@ def markdown(rep):
                     [label, len(ids), ", ".join(ids) or "–"]
                     for label, ids in mcp_usage.tally(rep.cases).items()
                     if ids or label in mcp_usage.RANK])]
+        tool_time = mcp_timing.totals(rep.cases)
+        if tool_time:
+            out += ["", "## MCP tool timing", "",
+                    "Time the MCP server took per tool, over every case and run, slowest total first.", "",
+                    table(["Tool", "Calls", "Total", "Avg", "Max"], [
+                        [name, t["calls"], mcp_timing.fmt(t["totalMs"]), mcp_timing.fmt(t["avgMs"]),
+                         mcp_timing.fmt(t["maxMs"])] for name, t in tool_time.items()])]
     else:
         out.append("No cases ran.")
     out += ["", "## Tool coverage", "",
@@ -294,7 +307,7 @@ def as_json(rep):
         "findings": found,
         "cases": [{"id": c.case.id, "title": c.case.title, "status": c.status, "skipped": c.skipped,
                    "passRate": (c.passed / len(c.runs)) if c.runs else None, "runs": c.runs,
-                   "mcpUsage": c.usage}
+                   "mcpUsage": c.usage, "timing": c.timing}
                   for c in rep.cases],
         "mcpUsage": {label: ids for label, ids in mcp_usage.tally(rep.cases).items()},
         "tools": tool_rows(rep),

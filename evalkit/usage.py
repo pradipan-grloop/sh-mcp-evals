@@ -78,14 +78,6 @@ def describe(u, paint=None):
     return f"{tools} ({calls}) → {label} ({of})"
 
 
-def case_lines(case, status, u, paint=None):
-    """The block printed after a case's result lines."""
-    return [f"  {case.id}  {case.title}",
-            f"    Result:     {status}",
-            f"    MCP tools:  {describe(u, paint)}",
-            f"    Tools used: {', '.join(u.get('tools') or []) or '–'}"]
-
-
 def tally(results):
     """{rating: [case ids]} over CaseResults, every rating present, in RANK order."""
     out = {label: [] for label in RANK}
@@ -103,6 +95,18 @@ def summary_lines(results, paint=None):
         named = f"  ({', '.join(ids)})" if ids and label in FLAGGED + (NOT_RATED,) else ""
         lines.append(f"  {paint(label, f'{label}:'.ljust(14))}{len(ids):>3}{named}")
     return lines
+
+
+def summary_line(results, paint=None):
+    """'MCP tool usage: Best 10 · Good 8 · Concerning 2 (R08, R17) · Risky 0 · No MCP tools 0'."""
+    paint = paint or plain
+    parts = []
+    for label, ids in tally(results).items():
+        if label in (NOT_RUN, NOT_RATED) and not ids:
+            continue
+        named = f" ({', '.join(ids)})" if ids and label in FLAGGED + (NOT_RATED,) else ""
+        parts.append(f"{paint(label, f'{label} {len(ids)}')}{named}")
+    return "MCP tool usage: " + " · ".join(parts)
 
 
 # --- colour ---
